@@ -1,9 +1,15 @@
-import { useState, useCallback } from "react";
-import Editor from "@monaco-editor/react";
+import { useState, useCallback, useRef } from "react";
+import Editor, { Monaco } from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Play, RotateCcw, Sparkles, Loader2 } from "lucide-react";
+import { Play, RotateCcw, Sparkles, Loader2, Palette } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const SAMPLE_CODE = `# Welcome to ICM Ruby Studio!
 # Try editing this code and click "Run" to see it execute.
@@ -34,6 +40,92 @@ greeter.calculate_sum([1, 2, 3, 4, 5])
 5.times { |i| puts "Iteration #{i + 1}" }
 `;
 
+const THEMES = {
+  monokai: {
+    name: "Monokai",
+    data: {
+      base: "vs-dark" as const,
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "75715E", fontStyle: "italic" },
+        { token: "keyword", foreground: "F92672" },
+        { token: "string", foreground: "E6DB74" },
+        { token: "number", foreground: "AE81FF" },
+        { token: "type", foreground: "66D9EF", fontStyle: "italic" },
+        { token: "class", foreground: "A6E22E" },
+        { token: "function", foreground: "A6E22E" },
+        { token: "variable", foreground: "F8F8F2" },
+        { token: "constant", foreground: "AE81FF" },
+        { token: "operator", foreground: "F92672" },
+      ],
+      colors: {
+        "editor.background": "#272822",
+        "editor.foreground": "#F8F8F2",
+        "editor.lineHighlightBackground": "#3E3D32",
+        "editor.selectionBackground": "#49483E",
+        "editorCursor.foreground": "#F8F8F0",
+        "editorWhitespace.foreground": "#3B3A32",
+      },
+    },
+  },
+  dracula: {
+    name: "Dracula",
+    data: {
+      base: "vs-dark" as const,
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "6272A4", fontStyle: "italic" },
+        { token: "keyword", foreground: "FF79C6" },
+        { token: "string", foreground: "F1FA8C" },
+        { token: "number", foreground: "BD93F9" },
+        { token: "type", foreground: "8BE9FD", fontStyle: "italic" },
+        { token: "class", foreground: "50FA7B" },
+        { token: "function", foreground: "50FA7B" },
+        { token: "variable", foreground: "F8F8F2" },
+        { token: "constant", foreground: "BD93F9" },
+        { token: "operator", foreground: "FF79C6" },
+      ],
+      colors: {
+        "editor.background": "#282A36",
+        "editor.foreground": "#F8F8F2",
+        "editor.lineHighlightBackground": "#44475A",
+        "editor.selectionBackground": "#44475A",
+        "editorCursor.foreground": "#F8F8F0",
+        "editorWhitespace.foreground": "#3B3A32",
+      },
+    },
+  },
+  "github-dark": {
+    name: "GitHub Dark",
+    data: {
+      base: "vs-dark" as const,
+      inherit: true,
+      rules: [
+        { token: "comment", foreground: "8B949E", fontStyle: "italic" },
+        { token: "keyword", foreground: "FF7B72" },
+        { token: "string", foreground: "A5D6FF" },
+        { token: "number", foreground: "79C0FF" },
+        { token: "type", foreground: "FFA657", fontStyle: "italic" },
+        { token: "class", foreground: "7EE787" },
+        { token: "function", foreground: "D2A8FF" },
+        { token: "variable", foreground: "C9D1D9" },
+        { token: "constant", foreground: "79C0FF" },
+        { token: "operator", foreground: "FF7B72" },
+      ],
+      colors: {
+        "editor.background": "#0D1117",
+        "editor.foreground": "#C9D1D9",
+        "editor.lineHighlightBackground": "#161B22",
+        "editor.selectionBackground": "#264F78",
+        "editorCursor.foreground": "#C9D1D9",
+        "editorWhitespace.foreground": "#484F58",
+      },
+    },
+  },
+};
+
+type ThemeKey = keyof typeof THEMES;
+
 interface ExecutionResult {
   stdout: string;
   stderr: string;
@@ -46,6 +138,24 @@ const InteractiveDemo = () => {
   const [code, setCode] = useState(SAMPLE_CODE);
   const [output, setOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<ThemeKey>("monokai");
+  const monacoRef = useRef<Monaco | null>(null);
+
+  const handleEditorMount = useCallback((monaco: Monaco) => {
+    monacoRef.current = monaco;
+    // Register all themes
+    Object.entries(THEMES).forEach(([key, theme]) => {
+      monaco.editor.defineTheme(key, theme.data);
+    });
+    monaco.editor.setTheme(currentTheme);
+  }, [currentTheme]);
+
+  const handleThemeChange = useCallback((theme: ThemeKey) => {
+    setCurrentTheme(theme);
+    if (monacoRef.current) {
+      monacoRef.current.editor.setTheme(theme);
+    }
+  }, []);
 
   const executeRubyCode = useCallback(async (rubyCode: string): Promise<string> => {
     try {
@@ -135,6 +245,29 @@ const InteractiveDemo = () => {
                 <span className="text-sm font-medium ml-2">app.rb</span>
               </div>
               <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Palette className="w-4 h-4 mr-1" />
+                      {THEMES[currentTheme].name}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {Object.entries(THEMES).map(([key, theme]) => (
+                      <DropdownMenuItem
+                        key={key}
+                        onClick={() => handleThemeChange(key as ThemeKey)}
+                        className={currentTheme === key ? "bg-accent" : ""}
+                      >
+                        {theme.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -146,7 +279,7 @@ const InteractiveDemo = () => {
                   Reset
                 </Button>
                 <Button 
-                  size="sm" 
+                  size="sm"
                   onClick={handleRun}
                   disabled={isRunning}
                   className="gradient-ruby text-white"
@@ -166,7 +299,8 @@ const InteractiveDemo = () => {
                 defaultLanguage="ruby"
                 value={code}
                 onChange={(value) => setCode(value || "")}
-                theme="vs-dark"
+                theme={currentTheme}
+                beforeMount={handleEditorMount}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
