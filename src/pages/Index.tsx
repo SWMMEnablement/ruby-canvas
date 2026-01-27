@@ -7,8 +7,8 @@ import InteractiveDemo from "@/components/landing/InteractiveDemo";
 import FeatureShowcase from "@/components/landing/FeatureShowcase";
 import HowItWorks from "@/components/landing/HowItWorks";
 import TechStack from "@/components/landing/TechStack";
+import AboutProject from "@/components/landing/AboutProject";
 import CallToAction from "@/components/landing/CallToAction";
-
 const Index = () => {
   const navigate = useNavigate();
 
@@ -105,6 +105,9 @@ const Index = () => {
 
         {/* Tech Stack */}
         <TechStack />
+
+        {/* About This Project */}
+        <AboutProject />
 
         {/* Simple CTA */}
         <CallToAction />
