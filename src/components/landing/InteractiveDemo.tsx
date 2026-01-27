@@ -131,21 +131,8 @@ const InteractiveDemo = () => {
   }, []);
 
   return (
-    <section className="container mx-auto px-4 py-20">
+    <section className="container mx-auto px-4 pb-12">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 text-sm text-primary mb-4">
-            <Sparkles className="w-4 h-4" />
-            Live Ruby Execution — No Sign Up Required
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Experience the Editor
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Write Ruby code in the editor below and click "Run" to see <strong>real execution</strong>. 
-            Your code runs on a secure Ruby 3.0 runtime via our backend.
-          </p>
-        </div>
 
         <div className="grid lg:grid-cols-2 gap-4">
           {/* Code Editor */}
@@ -248,9 +235,8 @@ const InteractiveDemo = () => {
           </Card>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          🔥 This demo executes <strong>real Ruby code</strong> on our secure backend. 
-          Sign up for gem support, file persistence, and project management.
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          ✓ This is not a simulation — your code executes on a real Ruby 3.0.1 runtime via the Piston API.
         </p>
       </div>
     </section>

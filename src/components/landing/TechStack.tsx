@@ -1,15 +1,15 @@
-import { Database, Server, Lock, Cloud, Code } from "lucide-react";
+import { Database, Server, Lock, Cloud, Code, ExternalLink } from "lucide-react";
 
 const TechStack = () => {
   return (
-    <section className="container mx-auto px-4 py-20 bg-muted/30">
+    <section className="container mx-auto px-4 py-16 bg-muted/30">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Built on Modern Infrastructure
+        <div className="text-center mb-10">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">
+            Technical Architecture
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            We use battle-tested technologies to ensure reliability, speed, and security.
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Open about how this works. No magic, just well-integrated open-source tools.
           </p>
         </div>
 
@@ -33,10 +33,15 @@ const TechStack = () => {
                 <Server className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Sandboxed Ruby Runtime</h3>
+                <h3 className="font-semibold mb-1 flex items-center gap-2">
+                  Piston Execution Engine
+                  <a href="https://github.com/engineer-man/piston" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Ruby 3.2 runs in isolated containers via edge functions. 
-                  Each execution is stateless and secure.
+                  Ruby 3.0.1 runs via the Piston API in isolated containers. 
+                  Stateless execution with 30s timeout and 128MB memory limit.
                 </p>
               </div>
             </div>
