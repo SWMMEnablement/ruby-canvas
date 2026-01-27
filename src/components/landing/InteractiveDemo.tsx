@@ -2,7 +2,8 @@ import { useState, useCallback } from "react";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Play, RotateCcw, Sparkles } from "lucide-react";
+import { Play, RotateCcw, Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SAMPLE_CODE = `# Welcome to ICM Ruby Studio!
 # Try editing this code and click "Run" to see it execute.
@@ -33,66 +34,71 @@ greeter.calculate_sum([1, 2, 3, 4, 5])
 5.times { |i| puts "Iteration #{i + 1}" }
 `;
 
+interface ExecutionResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  success: boolean;
+  error?: string;
+}
+
 const InteractiveDemo = () => {
   const [code, setCode] = useState(SAMPLE_CODE);
   const [output, setOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
 
-  const simulateExecution = useCallback((rubyCode: string) => {
-    // This simulates Ruby execution for demo purposes
-    // In production, this would call a real Ruby runtime via edge function
-    const lines: string[] = [];
-    
-    // Parse and simulate simple Ruby outputs
-    const putsMatches = rubyCode.match(/puts\s+["']([^"']+)["']/g);
-    const stringInterpolations = rubyCode.match(/puts\s+"([^"]+)"/g);
-    
-    // Simulate the Greeter class output
-    if (rubyCode.includes('Greeter.new')) {
-      const nameMatch = rubyCode.match(/Greeter\.new\(["'](\w+)["']\)/);
-      const name = nameMatch ? nameMatch[1] : "Developer";
-      lines.push(`Hello, ${name}! 👋`);
-      lines.push("Welcome to Ruby programming.");
-    }
-    
-    if (rubyCode.includes('calculate_sum')) {
-      lines.push("Sum of [1, 2, 3, 4, 5]: 15");
-    }
-    
-    if (rubyCode.includes('.times')) {
-      const timesMatch = rubyCode.match(/(\d+)\.times/);
-      const count = timesMatch ? parseInt(timesMatch[1]) : 5;
-      for (let i = 1; i <= count; i++) {
-        lines.push(`Iteration ${i}`);
-      }
-    }
-    
-    // Handle custom puts statements
-    const customPuts = rubyCode.match(/puts\s+["']([^#][^"']+)["']/g);
-    if (customPuts) {
-      customPuts.forEach(match => {
-        const text = match.match(/["'](.+)["']/);
-        if (text && !lines.includes(text[1]) && !text[1].includes('#{')) {
-          lines.push(text[1]);
-        }
+  const executeRubyCode = useCallback(async (rubyCode: string): Promise<string> => {
+    try {
+      const { data, error } = await supabase.functions.invoke<ExecutionResult>("execute-ruby", {
+        body: { code: rubyCode },
       });
+
+      if (error) {
+        return `❌ Error: ${error.message}`;
+      }
+
+      if (!data) {
+        return "❌ No response from execution service";
+      }
+
+      if (data.error) {
+        return `❌ ${data.error}`;
+      }
+
+      let result = "";
+      
+      if (data.stdout) {
+        result += data.stdout;
+      }
+      
+      if (data.stderr) {
+        result += result ? "\n" : "";
+        result += `⚠️ Stderr:\n${data.stderr}`;
+      }
+
+      if (data.success) {
+        result += result ? "\n\n" : "";
+        result += "✓ Execution completed successfully";
+      } else {
+        result += result ? "\n\n" : "";
+        result += `✗ Exited with code ${data.exitCode}`;
+      }
+
+      return result || "# No output generated";
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      return `❌ Execution failed: ${errorMessage}`;
     }
-    
-    return lines.length > 0 
-      ? lines.join("\n") + "\n\n✓ Execution completed successfully"
-      : "# No output generated\n\n✓ Execution completed successfully";
   }, []);
 
-  const handleRun = useCallback(() => {
+  const handleRun = useCallback(async () => {
     setIsRunning(true);
-    setOutput("▶ Executing Ruby code...\n\n");
+    setOutput("▶ Executing Ruby code...\n");
     
-    setTimeout(() => {
-      const result = simulateExecution(code);
-      setOutput(result);
-      setIsRunning(false);
-    }, 800);
-  }, [code, simulateExecution]);
+    const result = await executeRubyCode(code);
+    setOutput(result);
+    setIsRunning(false);
+  }, [code, executeRubyCode]);
 
   const handleReset = useCallback(() => {
     setCode(SAMPLE_CODE);
@@ -105,14 +111,14 @@ const InteractiveDemo = () => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 text-sm text-primary mb-4">
             <Sparkles className="w-4 h-4" />
-            Try It Now — No Sign Up Required
+            Live Ruby Execution — No Sign Up Required
           </div>
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Experience the Editor
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Write Ruby code in the editor below and click "Run" to see instant output. 
-            This is the same editor you'll use in your projects.
+            Write Ruby code in the editor below and click "Run" to see <strong>real execution</strong>. 
+            Your code runs on a secure Ruby 3.0 runtime via our backend.
           </p>
         </div>
 
@@ -122,7 +128,7 @@ const InteractiveDemo = () => {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-destructive/80" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                   <div className="w-3 h-3 rounded-full bg-green-500/80" />
                 </div>
@@ -134,6 +140,7 @@ const InteractiveDemo = () => {
                   size="sm" 
                   onClick={handleReset}
                   className="text-muted-foreground hover:text-foreground"
+                  disabled={isRunning}
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
                   Reset
@@ -144,7 +151,11 @@ const InteractiveDemo = () => {
                   disabled={isRunning}
                   className="gradient-ruby text-white"
                 >
-                  <Play className="w-4 h-4 mr-1" />
+                  {isRunning ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4 mr-1" />
+                  )}
                   {isRunning ? "Running..." : "Run"}
                 </Button>
               </div>
@@ -175,12 +186,12 @@ const InteractiveDemo = () => {
           <Card className="overflow-hidden border-border bg-card">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <div className={`w-2 h-2 rounded-full ${isRunning ? "bg-yellow-500 animate-pulse" : "bg-green-500"}`} />
                 <span className="text-sm font-medium">Console Output</span>
               </div>
-              <span className="text-xs text-muted-foreground">Ruby 3.2.0</span>
+              <span className="text-xs text-muted-foreground">Ruby 3.0.1 (Live)</span>
             </div>
-            <div className="h-[400px] bg-[#1e1e1e] p-4 overflow-auto">
+            <div className="h-[400px] bg-[hsl(var(--code-bg))] p-4 overflow-auto">
               <pre className="font-mono text-sm text-green-400 whitespace-pre-wrap">
                 {output || "# Click 'Run' to execute the code\n# Output will appear here..."}
               </pre>
@@ -189,8 +200,8 @@ const InteractiveDemo = () => {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          💡 This demo runs a simulated Ruby environment. Sign up to access full execution with gem support, 
-          file persistence, and project management.
+          🔥 This demo executes <strong>real Ruby code</strong> on our secure backend. 
+          Sign up for gem support, file persistence, and project management.
         </p>
       </div>
     </section>

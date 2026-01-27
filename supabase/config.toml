@@ -1,1 +1,4 @@
 project_id = "ghftgcywmktksqwsuamv"
+
+[functions.execute-ruby]
+verify_jwt = false
