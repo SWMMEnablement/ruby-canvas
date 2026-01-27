@@ -25,14 +25,14 @@ const steps = [
 
 const HowItWorks = () => {
   return (
-    <section className="container mx-auto px-4 py-20">
+    <section className="container mx-auto px-4 py-16 bg-muted/30">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            From Zero to Running Ruby in 60 Seconds
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">
+            Getting Started
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            No local Ruby installation. No environment configuration. Just open your browser and code.
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            No local Ruby installation required. Open your browser and start coding.
           </p>
         </div>
 

@@ -42,15 +42,14 @@ const features = [
 
 const FeatureShowcase = () => {
   return (
-    <section className="container mx-auto px-4 py-20 bg-muted/30">
+    <section className="container mx-auto px-4 py-16">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Everything You Need to Write Ruby
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">
+            What the Full Editor Includes
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Purpose-built for Ruby developers. Not a generic code playground—a focused environment 
-            for Ruby applications with tools that understand your workflow.
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Sign up to unlock project persistence, multi-file editing, and version history.
           </p>
         </div>
 
