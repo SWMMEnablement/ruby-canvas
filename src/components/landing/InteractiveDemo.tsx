@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import Editor, { Monaco } from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Play, RotateCcw, Sparkles, Loader2, Palette } from "lucide-react";
+import { Play, RotateCcw, Loader2, Palette, Download, Code } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -12,7 +12,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EDITOR_THEMES, EditorThemeKey } from "@/components/editor/EditorThemes";
 
-const SAMPLE_CODE = `# Welcome to ICM Ruby Studio!
+const CODE_EXAMPLES = {
+  greeter: {
+    name: "Greeter Class",
+    code: `# Welcome to ICM Ruby Studio!
 # Try editing this code and click "Run" to see it execute.
 
 class Greeter
@@ -39,7 +42,126 @@ greeter.calculate_sum([1, 2, 3, 4, 5])
 
 # Ruby is elegant and expressive!
 5.times { |i| puts "Iteration #{i + 1}" }
-`;
+`
+  },
+  calculator: {
+    name: "Calculator",
+    code: `# Calculator Class Example
+# Demonstrates OOP patterns in Ruby
+
+class Calculator
+  attr_reader :history
+
+  def initialize
+    @history = []
+  end
+
+  def add(a, b)
+    result = a + b
+    log_operation("#{a} + #{b} = #{result}")
+    result
+  end
+
+  def subtract(a, b)
+    result = a - b
+    log_operation("#{a} - #{b} = #{result}")
+    result
+  end
+
+  def multiply(a, b)
+    result = a * b
+    log_operation("#{a} × #{b} = #{result}")
+    result
+  end
+
+  def divide(a, b)
+    raise "Cannot divide by zero!" if b == 0
+    result = a.to_f / b
+    log_operation("#{a} ÷ #{b} = #{result}")
+    result
+  end
+
+  private
+
+  def log_operation(msg)
+    @history << msg
+    puts msg
+  end
+end
+
+# Usage
+calc = Calculator.new
+calc.add(10, 5)
+calc.subtract(20, 8)
+calc.multiply(6, 7)
+calc.divide(100, 4)
+
+puts "\\n📊 History:"
+calc.history.each { |op| puts "  • #{op}" }
+`
+  },
+  fizzbuzz: {
+    name: "FizzBuzz",
+    code: `# FizzBuzz - Classic Programming Challenge
+# Print numbers 1-30, but:
+#   - Multiples of 3: print "Fizz"
+#   - Multiples of 5: print "Buzz"
+#   - Multiples of both: print "FizzBuzz"
+
+def fizzbuzz(n)
+  (1..n).each do |i|
+    output = ""
+    output += "Fizz" if i % 3 == 0
+    output += "Buzz" if i % 5 == 0
+    output = i.to_s if output.empty?
+    puts output
+  end
+end
+
+puts "🎯 FizzBuzz (1-30):"
+puts "-" * 20
+fizzbuzz(30)
+`
+  },
+  fibonacci: {
+    name: "Fibonacci",
+    code: `# Fibonacci Sequence Generator
+# Demonstrates recursion and memoization
+
+class Fibonacci
+  def initialize
+    @memo = {}
+  end
+
+  # Recursive with memoization
+  def calculate(n)
+    return n if n <= 1
+    @memo[n] ||= calculate(n - 1) + calculate(n - 2)
+  end
+
+  # Generate sequence
+  def sequence(count)
+    (0...count).map { |i| calculate(i) }
+  end
+end
+
+fib = Fibonacci.new
+
+puts "🔢 Fibonacci Sequence (first 20 numbers):"
+puts "-" * 40
+seq = fib.sequence(20)
+puts seq.join(", ")
+
+puts "\\n📈 Growth pattern:"
+seq.each_with_index do |num, i|
+  bar = "█" * [num / 100, 50].min
+  puts "F(#{i.to_s.rjust(2)}): #{num.to_s.rjust(5)} #{bar}"
+end
+`
+  }
+};
+
+type ExampleKey = keyof typeof CODE_EXAMPLES;
 
 interface ExecutionResult {
   stdout: string;
@@ -50,15 +172,15 @@ interface ExecutionResult {
 }
 
 const InteractiveDemo = () => {
-  const [code, setCode] = useState(SAMPLE_CODE);
+  const [code, setCode] = useState(CODE_EXAMPLES.greeter.code);
   const [output, setOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<EditorThemeKey>("monokai");
+  const [currentExample, setCurrentExample] = useState<ExampleKey>("greeter");
   const monacoRef = useRef<Monaco | null>(null);
 
   const handleEditorMount = useCallback((monaco: Monaco) => {
     monacoRef.current = monaco;
-    // Register all themes
     Object.entries(EDITOR_THEMES).forEach(([key, theme]) => {
       monaco.editor.defineTheme(key, theme.data);
     });
@@ -71,6 +193,24 @@ const InteractiveDemo = () => {
       monacoRef.current.editor.setTheme(theme);
     }
   }, []);
+
+  const handleExampleChange = useCallback((example: ExampleKey) => {
+    setCurrentExample(example);
+    setCode(CODE_EXAMPLES[example].code);
+    setOutput("");
+  }, []);
+
+  const handleDownload = useCallback(() => {
+    const blob = new Blob([code], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "app.rb";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [code]);
 
   const executeRubyCode = useCallback(async (rubyCode: string): Promise<string> => {
     try {
@@ -126,9 +266,9 @@ const InteractiveDemo = () => {
   }, [code, executeRubyCode]);
 
   const handleReset = useCallback(() => {
-    setCode(SAMPLE_CODE);
+    setCode(CODE_EXAMPLES[currentExample].code);
     setOutput("");
-  }, []);
+  }, [currentExample]);
 
   return (
     <section className="container mx-auto px-4 pb-12">
@@ -154,6 +294,29 @@ const InteractiveDemo = () => {
                       size="sm"
                       className="text-muted-foreground hover:text-foreground"
                     >
+                      <Code className="w-4 h-4 mr-1" />
+                      {CODE_EXAMPLES[currentExample].name}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {Object.entries(CODE_EXAMPLES).map(([key, example]) => (
+                      <DropdownMenuItem
+                        key={key}
+                        onClick={() => handleExampleChange(key as ExampleKey)}
+                        className={currentExample === key ? "bg-accent" : ""}
+                      >
+                        {example.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
                       <Palette className="w-4 h-4 mr-1" />
                       {EDITOR_THEMES[currentTheme].name}
                     </Button>
@@ -170,7 +333,17 @@ const InteractiveDemo = () => {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="text-muted-foreground hover:text-foreground"
+                  title="Download as .rb file"
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Save
+                </Button>
+                <Button
                   variant="ghost" 
                   size="sm" 
                   onClick={handleReset}
