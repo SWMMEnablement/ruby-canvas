@@ -2,7 +2,8 @@ import { useState, useCallback, useRef } from "react";
 import Editor, { Monaco } from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Play, RotateCcw, Loader2, Palette, Download, Code } from "lucide-react";
+import { Play, RotateCcw, Loader2, Palette, Download, Code, Copy, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
@@ -177,7 +178,9 @@ const InteractiveDemo = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<EditorThemeKey>("monokai");
   const [currentExample, setCurrentExample] = useState<ExampleKey>("greeter");
+  const [copied, setCopied] = useState(false);
   const monacoRef = useRef<Monaco | null>(null);
+  const { toast } = useToast();
 
   const handleEditorMount = useCallback((monaco: Monaco) => {
     monacoRef.current = monaco;
@@ -211,6 +214,24 @@ const InteractiveDemo = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [code]);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      toast({
+        title: "Copied!",
+        description: "Code copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  }, [code, toast]);
 
   const executeRubyCode = useCallback(async (rubyCode: string): Promise<string> => {
     try {
@@ -333,6 +354,20 @@ const InteractiveDemo = () => {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="text-muted-foreground hover:text-foreground"
+                  title="Copy to clipboard"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 mr-1 text-green-500" />
+                  ) : (
+                    <Copy className="w-4 h-4 mr-1" />
+                  )}
+                  Copy
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
